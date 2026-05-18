@@ -51,6 +51,11 @@ from .kie_api.flux2_i2i import (
     RESOLUTION_OPTIONS as FLUX2_RESOLUTION_OPTIONS,
     run_flux2_i2i,
 )
+from .kie_api.wan27_edit import (
+    ASPECT_RATIO_OPTIONS as WAN27_ASPECT_RATIO_OPTIONS,
+    RESOLUTION_OPTIONS as WAN27_RESOLUTION_OPTIONS,
+    run_wan27_edit_pro,
+)
 from .kie_api.prompt_lists import parse_prompts_json
 from .kie_api.grid import slice_grid_tensor
 from .kie_api.http import TransientKieError
@@ -279,6 +284,76 @@ Outputs:
             api_key=api_key,
             aspect_ratio=aspect_ratio,
             quality=quality,
+            poll_interval_s=poll_interval_s,
+            timeout_s=timeout_s,
+            log=log,
+        )
+        return (image_tensor,)
+
+
+class KIE_Wan27_EditPro:
+    HELP = """
+KIE Wan 2.7 Edit Pro (Image)
+
+Edit one or more input images using Alibaba Wan 2.7 Image Pro.
+
+Inputs:
+- api_key: Your KIE API key (required)
+- prompt: Edit prompt (required, max 5000 chars)
+- images: Source image batch (up to 9 used as input_urls)
+- aspect_ratio: Fixed Wan enum (1:1, 16:9, 4:3, 21:9, 3:4, 9:16, 8:1, 1:8)
+- resolution: 1K or 2K (4K is text-to-image only, invalid for edits)
+- seed: 0..2147483647 for reproducible output, -1 for random per run
+- watermark: Add a watermark to the output image
+- poll_interval_s / timeout_s / log
+
+Outputs:
+- IMAGE: ComfyUI image tensor (BHWC float32 0-1)
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "api_key": ("STRING", {"default": ""}),
+                "prompt": ("STRING", {"multiline": True}),
+                "images": ("IMAGE",),
+            },
+            "optional": {
+                "aspect_ratio": ("COMBO", {"options": WAN27_ASPECT_RATIO_OPTIONS, "default": "1:1"}),
+                "resolution": ("COMBO", {"options": WAN27_RESOLUTION_OPTIONS, "default": "2K"}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 2147483647, "step": 1}),
+                "watermark": ("BOOLEAN", {"default": False}),
+                "log": ("BOOLEAN", {"default": True}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "generate"
+    CATEGORY = "kie-sl/api"
+
+    def generate(
+        self,
+        api_key: str,
+        prompt: str,
+        images: torch.Tensor,
+        aspect_ratio: str = "1:1",
+        resolution: str = "2K",
+        seed: int = -1,
+        watermark: bool = False,
+        log: bool = True,
+        poll_interval_s: float = 10.0,
+        timeout_s: int = 300,
+    ):
+        image_tensor = run_wan27_edit_pro(
+            prompt=prompt,
+            images=images,
+            api_key=api_key,
+            aspect_ratio=aspect_ratio,
+            resolution=resolution,
+            seed=seed,
+            watermark=watermark,
             poll_interval_s=poll_interval_s,
             timeout_s=timeout_s,
             log=log,
@@ -941,6 +1016,7 @@ NODE_CLASS_MAPPINGS = {
     "KIE_SL_NanoBananaPro_Image": KIE_NanoBananaPro_Image,
     "KIE_SL_Seedream45_TextToImage": KIE_Seedream45_TextToImage,
     "KIE_SL_Seedream45_Edit": KIE_Seedream45_Edit,
+    "KIE_SL_Wan27_EditPro": KIE_Wan27_EditPro,
     "KIE_SL_SeedanceV1Pro_Fast_I2V": KIE_SeedanceV1Pro_Fast_I2V,
     "KIE_SL_Seedance15Pro_I2V": KIE_Seedance15Pro_I2V,
     "KIE_SL_Kling25_I2V_Pro": KIE_Kling25_I2V_Pro,
@@ -957,6 +1033,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "KIE_SL_NanoBananaPro_Image": "KIE Nano Banana Pro (Image) [SL]",
     "KIE_SL_Seedream45_TextToImage": "KIE Seedream 4.5 Text-To-Image [SL]",
     "KIE_SL_Seedream45_Edit": "KIE Seedream 4.5 Edit [SL]",
+    "KIE_SL_Wan27_EditPro": "KIE Wan 2.7 Edit Pro (Image) [SL]",
     "KIE_SL_SeedanceV1Pro_Fast_I2V": "KIE Seedance V1 Pro Fast (I2V) [SL]",
     "KIE_SL_Seedance15Pro_I2V": "KIE Seedance 1.5 Pro (I2V/T2V) [SL]",
     "KIE_SL_Kling25_I2V_Pro": "KIE Kling 2.5 I2V Pro [SL]",
