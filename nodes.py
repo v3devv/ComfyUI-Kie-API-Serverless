@@ -303,9 +303,11 @@ Inputs:
 - images: Source image batch (up to 9 used as input_urls)
 - aspect_ratio: Fixed Wan enum (1:1, 16:9, 4:3, 21:9, 3:4, 9:16, 8:1, 1:8)
 - resolution: 1K or 2K (4K is text-to-image only, invalid for edits)
-- seed: 0..2147483647 for reproducible output, -1 for random per run
 - watermark: Add a watermark to the output image
 - poll_interval_s / timeout_s / log
+
+The seed is randomized every run, so each queue produces a fresh image
+(this node is never cached).
 
 Outputs:
 - IMAGE: ComfyUI image tensor (BHWC float32 0-1)
@@ -322,7 +324,6 @@ Outputs:
             "optional": {
                 "aspect_ratio": ("COMBO", {"options": WAN27_ASPECT_RATIO_OPTIONS, "default": "1:1"}),
                 "resolution": ("COMBO", {"options": WAN27_RESOLUTION_OPTIONS, "default": "2K"}),
-                "seed": ("INT", {"default": -1, "min": -1, "max": 2147483647, "step": 1}),
                 "watermark": ("BOOLEAN", {"default": False}),
                 "log": ("BOOLEAN", {"default": True}),
             },
@@ -333,6 +334,12 @@ Outputs:
     FUNCTION = "generate"
     CATEGORY = "kie-sl/api"
 
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # Seed is randomized internally every run; force re-execution so
+        # ComfyUI never serves a cached image for an unchanged graph.
+        return float("nan")
+
     def generate(
         self,
         api_key: str,
@@ -340,7 +347,6 @@ Outputs:
         images: torch.Tensor,
         aspect_ratio: str = "1:1",
         resolution: str = "2K",
-        seed: int = -1,
         watermark: bool = False,
         log: bool = True,
         poll_interval_s: float = 10.0,
@@ -352,7 +358,6 @@ Outputs:
             api_key=api_key,
             aspect_ratio=aspect_ratio,
             resolution=resolution,
-            seed=seed,
             watermark=watermark,
             poll_interval_s=poll_interval_s,
             timeout_s=timeout_s,

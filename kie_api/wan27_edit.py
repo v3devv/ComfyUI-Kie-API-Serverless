@@ -69,16 +69,6 @@ def _validate_image_input(images: torch.Tensor | None) -> torch.Tensor:
     return images
 
 
-def _resolve_seed(seed: int) -> int:
-    # -1 means "fresh random per run" so retries/reruns produce different
-    # images (mirrors proteafield's None -> random.randint behaviour).
-    if seed is None or seed < 0:
-        return random.randint(0, SEED_MAX)
-    if seed > SEED_MAX:
-        return seed % (SEED_MAX + 1)
-    return seed
-
-
 def _create_wan27_edit_task(api_key: str, payload: dict[str, Any]) -> tuple[str, str]:
     try:
         response = requests.post(
@@ -117,7 +107,6 @@ def run_wan27_edit_pro(
     api_key: str,
     aspect_ratio: str,
     resolution: str,
-    seed: int,
     watermark: bool,
     poll_interval_s: float,
     timeout_s: int,
@@ -131,7 +120,6 @@ def run_wan27_edit_pro(
         api_key: KIE API key.
         aspect_ratio: Output aspect ratio (fixed KIE enum).
         resolution: Output resolution ("1K" or "2K"; 4K invalid for edit).
-        seed: 0..2147483647 for reproducible output; -1 for random per run.
         watermark: Add a watermark to the output image.
         poll_interval_s: Seconds between status polls.
         timeout_s: Maximum seconds to wait for completion.
@@ -163,7 +151,9 @@ def run_wan27_edit_pro(
         input_urls.append(url)
         _log(log, f"Image {idx + 1} upload success: {_truncate_url(url)}")
 
-    resolved_seed = _resolve_seed(seed)
+    # KIE has no native "random" flag and seed=0 is not reliably random,
+    # so roll a fresh seed every call (matches proteafield's approach).
+    resolved_seed = random.randint(0, SEED_MAX)
 
     payload = {
         "model": MODEL_NAME,
