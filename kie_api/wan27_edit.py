@@ -107,7 +107,6 @@ def run_wan27_edit_pro(
     api_key: str,
     aspect_ratio: str,
     resolution: str,
-    watermark: bool,
     poll_interval_s: float,
     timeout_s: int,
     log: bool,
@@ -120,7 +119,6 @@ def run_wan27_edit_pro(
         api_key: KIE API key.
         aspect_ratio: Output aspect ratio (fixed KIE enum).
         resolution: Output resolution ("1K" or "2K"; 4K invalid for edit).
-        watermark: Add a watermark to the output image.
         poll_interval_s: Seconds between status polls.
         timeout_s: Maximum seconds to wait for completion.
         log: Enable verbose logging.
@@ -165,7 +163,7 @@ def run_wan27_edit_pro(
             "n": 1,
             "enable_sequential": False,
             "thinking_mode": False,
-            "watermark": bool(watermark),
+            "watermark": False,
             "seed": resolved_seed,
             "nsfw_checker": False,
         },

@@ -303,11 +303,11 @@ Inputs:
 - images: Source image batch (up to 9 used as input_urls)
 - aspect_ratio: Fixed Wan enum (1:1, 16:9, 4:3, 21:9, 3:4, 9:16, 8:1, 1:8)
 - resolution: 1K or 2K (4K is text-to-image only, invalid for edits)
-- watermark: Add a watermark to the output image
 - poll_interval_s / timeout_s / log
 
-The seed is randomized every run, so each queue produces a fresh image
-(this node is never cached).
+Watermark and NSFW filtering are always off. The seed is randomized
+every run, so each queue produces a fresh image (this node is never
+cached).
 
 Outputs:
 - IMAGE: ComfyUI image tensor (BHWC float32 0-1)
@@ -324,7 +324,6 @@ Outputs:
             "optional": {
                 "aspect_ratio": ("COMBO", {"options": WAN27_ASPECT_RATIO_OPTIONS, "default": "1:1"}),
                 "resolution": ("COMBO", {"options": WAN27_RESOLUTION_OPTIONS, "default": "2K"}),
-                "watermark": ("BOOLEAN", {"default": False}),
                 "log": ("BOOLEAN", {"default": True}),
             },
         }
@@ -347,7 +346,6 @@ Outputs:
         images: torch.Tensor,
         aspect_ratio: str = "1:1",
         resolution: str = "2K",
-        watermark: bool = False,
         log: bool = True,
         poll_interval_s: float = 10.0,
         timeout_s: int = 300,
@@ -358,7 +356,6 @@ Outputs:
             api_key=api_key,
             aspect_ratio=aspect_ratio,
             resolution=resolution,
-            watermark=watermark,
             poll_interval_s=poll_interval_s,
             timeout_s=timeout_s,
             log=log,
